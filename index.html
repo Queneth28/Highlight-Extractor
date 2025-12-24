@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Highlight Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .url-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .url-hint {
+            margin-top: 15px;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .url-hint span {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin: 2px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Options Section */
+        .options-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px solid #eee;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .option-group {
+            margin-bottom: 15px;
+        }
+
+        .option-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .option-group select,
+        .option-group input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .option-group select:focus,
+        .option-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Progress Section */
+        .progress-section {
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 25px;
+            background: #eee;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 15px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-message.processing {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .status-message.completed {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-message.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .steps {
+            margin-top: 20px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .step:last-child {
+            border-bottom: none;
+        }
+
+        .step-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .step-icon.pending {
+            background: #eee;
+            color: #999;
+        }
+
+        .step-icon.active {
+            background: #667eea;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .step-icon.completed {
+            background: #4caf50;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        /* Highlights List */
+        .highlights-section {
+            margin: 25px 0;
+        }
+
+        .highlight-card {
+            background: #f8f9ff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .highlight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .highlight-time {
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .highlight-score {
+            background: #4caf50;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+        }
+
+        .highlight-reason {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Download Section */
+        .download-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .download-btn span {
+            margin-left: 6px;
+        }
+
+        .reset-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .reset-btn:hover {
+            background: #e0e0e0;
+        }
+
+        /* Collapsible Options */
+        .options-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 10px 0;
+        }
+
+        .options-toggle h3 {
+            margin: 0;
+        }
+
+        .toggle-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s;
+        }
+
+        .toggle-icon.open {
+            transform: rotate(180deg);
+        }
+
+        .options-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .options-content.open {
+            max-height: 500px;
+        }
+
+        .speed-badge {
+            background: #4caf50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Highlight Extractor</h1>
+        <p class="subtitle">Extract viral-worthy highlights from any video using AI <span class="speed-badge">⚡</span></p>
+
+        <!-- Upload Section -->
+        <div class="card" id="uploadSection">
+            <div class="tabs">
+                <button class="tab active" data-tab="upload">📁 Upload File</button>
+                <button class="tab" data-tab="url">🔗 Paste URL</button>
+            </div>
+
+            <div class="tab-content active" id="uploadTab">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📤</div>
+                    <p class="upload-text">Drag & drop your video here or click to browse</p>
+                    <p class="upload-hint">Supports MP4, AVI, MOV, MKV (max 500MB)</p>
+                </div>
+                <input type="file" id="fileInput" accept=".mp4,.avi,.mov,.mkv">
+            </div>
+
+            <div class="tab-content" id="urlTab">
+                <div class="url-input-container">
+                    <input type="text" class="url-input" id="urlInput" placeholder="Paste video URL here...">
+                </div>
+                <p class="url-hint">
+                    Supports: 
+                    <span>YouTube</span>
+                    <span>Vimeo</span>
+                    <span>Twitter/X</span>
+                    <span>TikTok</span>
+                    <span>1000+ sites</span>
+                </p>
+            </div>
+
+            <!-- Options Section -->
+            <div class="options-section">
+                <div class="options-toggle" id="optionsToggle">
+                    <h3>⚙️ Options</h3>
+                    <span class="toggle-icon" id="toggleIcon">▼</span>
+                </div>
+                
+                <div class="options-content" id="optionsContent">
+                    <div class="options-grid">
+                        <div class="option-group">
+                            <label>📐 Aspect Ratio</label>
+                            <select id="aspectRatio">
+                                <option value="9:16">9:16 (TikTok, Reels)</option>
+                                <option value="16:9">16:9 (YouTube)</option>
+                                <option value="1:1">1:1 (Instagram)</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label>🎯 Max Highlights</label>
+                            <select id="maxHighlights">
+                                <option value="3">3 highlights</option>
+                                <option value="5" selected>5 highlights</option>
+                                <option value="10">10 highlights</option>
+                                <option value="0">All highlights</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label>⏱️ Min Duration (sec)</label>
+                            <input type="number" id="minDuration" value="3" min="1" max="60">
+                        </div>
+
+                        <div class="option-group">
+                            <label>⏱️ Max Duration (sec)</label>
+                            <input type="number" id="maxDuration" value="30" min="5" max="120">
+                        </div>
+
+                        <div class="option-group">
+                            <label>🔤 Subtitle Size</label>
+                            <select id="subtitleSize">
+                                <option value="small">Small</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="large">Large</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label>📍 Subtitle Position</label>
+                            <select id="subtitlePosition">
+                                <option value="top">Top</option>
+                                <option value="center">Center</option>
+                                <option value="bottom" selected>Bottom</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label>🎨 Subtitle Color</label>
+                            <select id="subtitleColor">
+                                <option value="white" selected>White</option>
+                                <option value="yellow">Yellow</option>
+                                <option value="cyan">Cyan</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label>🌐 Language</label>
+                            <select id="language">
+                                <option value="auto" selected>Auto-detect</option>
+                                <option value="en">English</option>
+                                <option value="es">Spanish</option>
+                                <option value="fr">French</option>
+                                <option value="de">German</option>
+                                <option value="pt">Portuguese</option>
+                                <option value="it">Italian</option>
+                                <option value="ja">Japanese</option>
+                                <option value="ko">Korean</option>
+                                <option value="zh">Chinese</option>
+                                <option value="ar">Arabic</option>
+                                <option value="hi">Hindi</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label>🎬 Transitions</label>
+                            <select id="transition">
+                                <option value="fade" selected>Fade</option>
+                                <option value="cut">Hard Cut</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="submit-btn" id="submitBtn">🚀 Extract Highlights</button>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="card progress-section" id="progressSection">
+            <h2>Processing Your Video</h2>
+            
+            <div class="status-message processing" id="statusMessage">
+                Initializing...
+            </div>
+
+            <div class="progress-header">
+                <span>Progress</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="steps">
+                <h3>Processing Steps:</h3>
+                <div class="step">
+                    <div class="step-icon pending" id="step1">1</div>
+                    <span>Uploading / Downloading Video</span>
+                </div>
+                <div class="step">
+                    <div class="step-icon pending" id="step2">2</div>
+                    <span>Extracting Audio</span>
+                </div>
+                <div class="step">
+                    <div class="step-icon pending" id="step3">3</div>
+                    <span>Transcribing with Whisper AI</span>
+                </div>
+                <div class="step">
+                    <div class="step-icon pending" id="step4">4</div>
+                    <span>Detecting Highlights (GPT-4o-mini)</span>
+                </div>
+                <div class="step">
+                    <div class="step-icon pending" id="step5">5</div>
+                    <span>Resizing Video (720p)</span>
+                </div>
+                <div class="step">
+                    <div class="step-icon pending" id="step6">6</div>
+                    <span>Creating Highlight Reel</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="card results-section" id="resultsSection">
+            <h2>✅ Your Highlights Are Ready!</h2>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="highlightCount">0</div>
+                    <div class="stat-label">Highlights</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalDuration">0s</div>
+                    <div class="stat-label">Total Duration</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="subtitleCount">0</div>
+                    <div class="stat-label">Subtitles</div>
+                </div>
+            </div>
+
+            <!-- Highlights List -->
+            <div class="highlights-section">
+                <h3>⭐ Highlight Breakdown</h3>
+                <div id="highlightsList"></div>
+            </div>
+
+            <!-- Download Section -->
+            <div class="download-section">
+                <h3>💾 Download</h3>
+                <div class="download-grid">
+                    <a href="#" class="download-btn" id="downloadHighlights">
+                        🎬 <span>Highlights Video</span>
+                    </a>
+                    <a href="#" class="download-btn" id="downloadSubtitles">
+                        📝 <span>Subtitles (SRT)</span>
+                    </a>
+                    <a href="#" class="download-btn" id="downloadMetadata">
+                        📊 <span>Data (JSON)</span>
+                    </a>
+                </div>
+            </div>
+
+            <button class="reset-btn" id="resetBtn">🔄 Process Another Video</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const urlInput = document.getElementById('urlInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadSection = document.getElementById('uploadSection');
+        const progressSection = document.getElementById('progressSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const statusMessage = document.getElementById('statusMessage');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const optionsToggle = document.getElementById('optionsToggle');
+        const optionsContent = document.getElementById('optionsContent');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        let currentJobId = null;
+        let ws = null;
+        let selectedFile = null;
+        let currentTab = 'upload';
+
+        // Options toggle
+        optionsToggle.addEventListener('click', () => {
+            optionsContent.classList.toggle('open');
+            toggleIcon.classList.toggle('open');
+        });
+
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                currentTab = tab.dataset.tab;
+                document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+            });
+        });
+
+        // File selection handlers
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) selectFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) selectFile(file);
+        });
+
+        function selectFile(file) {
+            selectedFile = file;
+            uploadArea.innerHTML = `
+                <div class="upload-icon">✅</div>
+                <p class="upload-text">${file.name}</p>
+                <p class="upload-hint">${(file.size / (1024 * 1024)).toFixed(2)} MB - Click to change</p>
+            `;
+        }
+
+        // Get options from form
+        function getOptions() {
+            return {
+                aspect_ratio: document.getElementById('aspectRatio').value,
+                max_highlights: parseInt(document.getElementById('maxHighlights').value),
+                min_duration: parseInt(document.getElementById('minDuration').value),
+                max_duration: parseInt(document.getElementById('maxDuration').value),
+                subtitle_size: document.getElementById('subtitleSize').value,
+                subtitle_position: document.getElementById('subtitlePosition').value,
+                subtitle_color: document.getElementById('subtitleColor').value,
+                language: document.getElementById('language').value,
+                transition: document.getElementById('transition').value
+            };
+        }
+
+        // Submit handler
+        submitBtn.addEventListener('click', () => {
+            if (currentTab === 'upload' && selectedFile) {
+                uploadFile(selectedFile);
+            } else if (currentTab === 'url' && urlInput.value.trim()) {
+                processUrl(urlInput.value.trim());
+            } else {
+                alert('Please select a file or enter a URL');
+            }
+        });
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('options', JSON.stringify(getOptions()));
+
+            showProgress();
+            updateStep(1, 'active');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/process-video', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentJobId = data.job_id;
+                    updateStep(1, 'completed');
+                    connectWebSocket(currentJobId);
+                } else {
+                    showError(data.detail || 'Upload failed');
+                }
+            } catch (error) {
+                showError('Failed to upload video: ' + error.message);
+            }
+        }
+
+        async function processUrl(url) {
+            showProgress();
+            updateStep(1, 'active');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/process-url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        url: url,
+                        options: getOptions()
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentJobId = data.job_id;
+                    updateStep(1, 'completed');
+                    connectWebSocket(currentJobId);
+                } else {
+                    showError(data.detail || 'Failed to process URL');
+                }
+            } catch (error) {
+                showError('Failed to process URL: ' + error.message);
+            }
+        }
+
+        function connectWebSocket(jobId) {
+            ws = new WebSocket(`ws://${window.location.host}/ws/job/${jobId}`);
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                updateProgress(data);
+            };
+
+            ws.onerror = () => {
+                pollJobStatus(jobId);
+            };
+        }
+
+        async function pollJobStatus(jobId) {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/job/${jobId}`);
+                    const data = await response.json();
+                    updateProgress(data);
+
+                    if (data.status === 'completed' || data.status === 'error') {
+                        clearInterval(interval);
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 1000);
+        }
+
+        function updateProgress(data) {
+            progressFill.style.width = data.progress + '%';
+            progressPercent.textContent = data.progress + '%';
+            
+            statusMessage.textContent = data.message;
+            statusMessage.className = 'status-message ' + data.status;
+
+            // Update steps
+            if (data.progress >= 15) updateStep(2, 'completed');
+            if (data.progress >= 30) updateStep(3, 'completed');
+            if (data.progress >= 45) updateStep(4, 'completed');
+            if (data.progress >= 60) updateStep(5, 'completed');
+            if (data.progress >= 85) updateStep(6, 'completed');
+
+            // Active step
+            if (data.progress < 15) updateStep(2, 'active');
+            else if (data.progress < 30) updateStep(3, 'active');
+            else if (data.progress < 45) updateStep(4, 'active');
+            else if (data.progress < 60) updateStep(5, 'active');
+            else if (data.progress < 85) updateStep(6, 'active');
+
+            if (data.status === 'completed') {
+                showResults(data.metadata);
+            } else if (data.status === 'error') {
+                showError(data.message);
+            }
+        }
+
+        function updateStep(stepNum, status) {
+            const step = document.getElementById('step' + stepNum);
+            step.className = 'step-icon ' + status;
+            if (status === 'completed') {
+                step.textContent = '✓';
+            }
+        }
+
+        function showProgress() {
+            uploadSection.style.display = 'none';
+            progressSection.classList.add('active');
+            resultsSection.classList.remove('active');
+        }
+
+        function showResults(metadata) {
+            progressSection.classList.remove('active');
+            resultsSection.classList.add('active');
+
+            // Stats
+            document.getElementById('highlightCount').textContent = metadata.num_highlights;
+            document.getElementById('totalDuration').textContent = metadata.total_duration + 's';
+            document.getElementById('subtitleCount').textContent = metadata.num_subtitles;
+
+            // Highlights
+            displayHighlights(metadata.highlights);
+
+            // Download links
+            document.getElementById('downloadHighlights').href = `/api/download/${currentJobId}/highlights`;
+            document.getElementById('downloadSubtitles').href = `/api/download/${currentJobId}/subtitles`;
+            document.getElementById('downloadMetadata').href = `/api/download/${currentJobId}/metadata`;
+        }
+
+        function displayHighlights(highlights) {
+            const container = document.getElementById('highlightsList');
+            container.innerHTML = '';
+
+            if (!highlights || highlights.length === 0) {
+                container.innerHTML = '<p style="color: #666; padding: 15px;">No highlights detected.</p>';
+                return;
+            }
+
+            let cumulativeTime = 0;
+            highlights.forEach((highlight, index) => {
+                const duration = highlight.end - highlight.start;
+                const card = document.createElement('div');
+                card.className = 'highlight-card';
+                card.innerHTML = `
+                    <div class="highlight-header">
+                        <span class="highlight-time">⏱️ ${formatTime(cumulativeTime)} - ${formatTime(cumulativeTime + duration)}</span>
+                        <span class="highlight-score">Score: ${highlight.score}/100</span>
+                    </div>
+                    <p class="highlight-reason">${highlight.reason}</p>
+                `;
+                
+                container.appendChild(card);
+                cumulativeTime += duration;
+            });
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function showError(message) {
+            statusMessage.textContent = 'Error: ' + message;
+            statusMessage.className = 'status-message error';
+            submitBtn.disabled = false;
+        }
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            location.reload();
+        });
+    </script>
+</body>
+</html>
